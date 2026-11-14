@@ -26,68 +26,15 @@ async function loadGallery() {
 }
 
 async function loadImageGroups() {
-  const source = getImageSource();
-  const entries = await fetchDirectory(source);
-  const groups = [];
+  const response = await fetch('images.json');
+  if (!response.ok) throw new Error(`No se pudo leer images.json: ${response.status}`);
 
-  for (const entry of sortEntries(entries)) {
-    if (entry.type === 'dir') {
-      const folderEntries = await fetchDirectory(entry.url);
-      const images = collectImages(folderEntries);
-      if (images.length > 0) groups.push({ images });
-    } else if (isImage(entry.name)) {
-      groups.push({ images: [getImageUrl(entry)] });
-    }
+  const groups = await response.json();
+  if (!Array.isArray(groups) || groups.some((group) => !Array.isArray(group.images))) {
+    throw new Error('El formato de images.json no es válido');
   }
 
   return groups;
-}
-
-async function fetchDirectory(source) {
-  const response = await fetch(source);
-  if (!response.ok) throw new Error(`No se pudo leer ${source}: ${response.status}`);
-
-  if (source === 'images/' || source.startsWith('images/')) {
-    return [...new DOMParser().parseFromString(await response.text(), 'text/html').querySelectorAll('a')]
-      .map((link) => {
-        const href = link.getAttribute('href') || '';
-        const decodedHref = decodeURIComponent(href);
-        const isDirectory = decodedHref.endsWith('/');
-        const name = decodedHref.replace(/\/$/, '').split('/').pop() || '';
-        return { type: isDirectory ? 'dir' : 'file', name, url: `${source}${href}` };
-      });
-  }
-
-  return response.json();
-}
-
-function collectImages(entries) {
-  return sortEntries(entries)
-    .filter((entry) => entry.type === 'file' && isImage(entry.name))
-    .map(getImageUrl);
-}
-
-function getImageUrl(entry) {
-  return entry.download_url || entry.url;
-}
-
-function sortEntries(entries) {
-  return [...entries].sort((first, second) => (first.name || '').localeCompare(second.name || '', undefined, {
-    numeric: true,
-    sensitivity: 'base'
-  }));
-}
-
-function isImage(name) {
-  return /\.(avif|gif|jpe?g|png|webp)$/i.test(name);
-}
-
-function getImageSource() {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'images/';
-  }
-
-  return 'https://api.github.com/repos/daniel-gdg/MueblesDeMiCasa/contents/images?ref=master';
 }
 
 function addGalleryItem(src, index) {
