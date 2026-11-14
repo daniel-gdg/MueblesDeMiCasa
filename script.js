@@ -87,7 +87,7 @@ function getImageSource() {
     return 'images/';
   }
 
-  return 'https://api.github.com/repos/daniel-gdg/MueblesDeMiCasa/contents/images?ref=agrupaciones';
+  return 'https://api.github.com/repos/daniel-gdg/MueblesDeMiCasa/contents/images?ref=master';
 }
 
 function addGalleryItem(src, index) {
